@@ -12,5 +12,16 @@ export const handlers = {
     }
     ctx.payload = { element, dragged: true, position: data.position };
     return ctx;
+  }),
+
+  updatePosition: vi.fn((data: any, ctx: any) => {
+    // Mock position update
+    const element = document.getElementById(data.id);
+    if (element && data.position) {
+      element.style.left = `${data.position.x}px`;
+      element.style.top = `${data.position.y}px`;
+    }
+    ctx.position = data.position;
+    return ctx;
   })
 };

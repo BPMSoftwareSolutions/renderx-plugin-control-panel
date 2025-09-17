@@ -1,0 +1,213 @@
+name: Performance Monitoring
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Run performance tests weekly on Sundays at 2 AM UTC
+    - cron: '0 2 * * 0'
+
+jobs:
+  bundle-analysis:
+    name: Bundle Size Analysis
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Build for analysis
+      run: npm run build
+      
+    - name: Analyze bundle size
+      run: |
+        echo "📦 Bundle Analysis Results:" > bundle-report.md
+        echo "" >> bundle-report.md
+        
+        # Get total bundle size
+        TOTAL_SIZE=$(du -sh dist/ | cut -f1)
+        echo "**Total Bundle Size:** $TOTAL_SIZE" >> bundle-report.md
+        echo "" >> bundle-report.md
+        
+        # List individual files
+        echo "### 📁 File Breakdown:" >> bundle-report.md
+        echo "" >> bundle-report.md
+        echo "| File | Size |" >> bundle-report.md
+        echo "|------|------|" >> bundle-report.md
+        
+        find dist/ -type f -name "*.js" -o -name "*.css" | while read file; do
+          size=$(du -sh "$file" | cut -f1)
+          filename=$(basename "$file")
+          echo "| $filename | $size |" >> bundle-report.md
+        done
+        
+        echo "" >> bundle-report.md
+        
+        # Check for large files
+        echo "### ⚠️ Large Files (>100KB):" >> bundle-report.md
+        echo "" >> bundle-report.md
+        
+        find dist/ -type f -size +100k | while read file; do
+          size=$(du -sh "$file" | cut -f1)
+          filename=$(basename "$file")
+          echo "- **$filename**: $size" >> bundle-report.md
+        done || echo "✅ No files larger than 100KB found" >> bundle-report.md
+        
+    - name: Compare with main branch
+      if: github.event_name == 'pull_request'
+      run: |
+        # Store current size
+        CURRENT_SIZE=$(du -sb dist/ | cut -f1)
+        
+        # Checkout main and build
+        git checkout origin/main -- package.json package-lock.json 2>/dev/null || true
+        npm ci --quiet
+        npm run build --silent
+        MAIN_SIZE=$(du -sb dist/ | cut -f1)
+        
+        # Calculate difference
+        SIZE_DIFF=$((CURRENT_SIZE - MAIN_SIZE))
+        SIZE_DIFF_KB=$((SIZE_DIFF / 1024))
+        PERCENTAGE=$(( (SIZE_DIFF * 100) / MAIN_SIZE ))
+        
+        echo "" >> bundle-report.md
+        echo "### 📊 Size Comparison with Main:" >> bundle-report.md
+        echo "" >> bundle-report.md
+        echo "| Branch | Size | Difference |" >> bundle-report.md
+        echo "|--------|------|------------|" >> bundle-report.md
+        echo "| main | $(numfmt --to=iec $MAIN_SIZE) | baseline |" >> bundle-report.md
+        echo "| this PR | $(numfmt --to=iec $CURRENT_SIZE) | ${SIZE_DIFF_KB}KB (${PERCENTAGE}%) |" >> bundle-report.md
+        
+        if [ $SIZE_DIFF_KB -gt 50 ]; then
+          echo "" >> bundle-report.md
+          echo "⚠️ **Warning:** Bundle size increased by more than 50KB" >> bundle-report.md
+        fi
+        
+    - name: Upload bundle analysis
+      uses: actions/upload-artifact@v4
+      with:
+        name: bundle-analysis
+        path: |
+          bundle-report.md
+          dist/
+        retention-days: 30
+        
+    - name: Comment PR with bundle analysis
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          const report = fs.readFileSync('bundle-report.md', 'utf8');
+          
+          const { data: comments } = await github.rest.issues.listComments({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number
+          });
+          
+          const botComment = comments.find(comment => 
+            comment.user.type === 'Bot' && 
+            comment.body.includes('Bundle Analysis Results')
+          );
+          
+          const commentBody = `## 📦 Bundle Analysis Results\n\n${report}\n\n---\n*Updated automatically by performance monitoring workflow*`;
+          
+          if (botComment) {
+            await github.rest.issues.updateComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: botComment.id,
+              body: commentBody
+            });
+          } else {
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: commentBody
+            });
+          }
+
+  build-performance:
+    name: Build Performance
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Measure build performance
+      run: |
+        echo "⏱️ Build Performance Metrics:" > build-performance.md
+        echo "" >> build-performance.md
+        
+        # Measure TypeScript compilation
+        echo "### TypeScript Compilation:" >> build-performance.md
+        START_TIME=$(date +%s%N)
+        npm run typecheck
+        END_TIME=$(date +%s%N)
+        TYPECHECK_TIME=$(( (END_TIME - START_TIME) / 1000000 ))
+        echo "- **Duration:** ${TYPECHECK_TIME}ms" >> build-performance.md
+        echo "" >> build-performance.md
+        
+        # Measure build time
+        echo "### Build Process:" >> build-performance.md
+        START_TIME=$(date +%s%N)
+        npm run build
+        END_TIME=$(date +%s%N)
+        BUILD_TIME=$(( (END_TIME - START_TIME) / 1000000 ))
+        echo "- **Duration:** ${BUILD_TIME}ms" >> build-performance.md
+        echo "" >> build-performance.md
+        
+        # Measure test execution
+        echo "### Test Execution:" >> build-performance.md
+        START_TIME=$(date +%s%N)
+        npm run test:run
+        END_TIME=$(date +%s%N)
+        TEST_TIME=$(( (END_TIME - START_TIME) / 1000000 ))
+        echo "- **Duration:** ${TEST_TIME}ms" >> build-performance.md
+        echo "" >> build-performance.md
+        
+        # Total time
+        TOTAL_TIME=$((TYPECHECK_TIME + BUILD_TIME + TEST_TIME))
+        echo "### 🎯 Total CI Time:" >> build-performance.md
+        echo "- **Total Duration:** ${TOTAL_TIME}ms" >> build-performance.md
+        
+        # Set performance thresholds
+        if [ $BUILD_TIME -gt 30000 ]; then
+          echo "⚠️ **Warning:** Build time exceeds 30 seconds" >> build-performance.md
+        fi
+        
+        if [ $TEST_TIME -gt 60000 ]; then
+          echo "⚠️ **Warning:** Test execution exceeds 60 seconds" >> build-performance.md
+        fi
+        
+    - name: Upload performance metrics
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-performance
+        path: build-performance.md
+        retention-days: 30

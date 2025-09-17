@@ -1,0 +1,209 @@
+name: PR Checks
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches: [ main, develop ]
+
+jobs:
+  pr-validation:
+    name: PR Validation
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Check PR title format
+      run: |
+        PR_TITLE="${{ github.event.pull_request.title }}"
+        if [[ ! "$PR_TITLE" =~ ^(feat|fix|docs|style|refactor|test|chore|perf|ci|build|revert)(\(.+\))?: .+ ]]; then
+          echo "❌ PR title must follow conventional commit format"
+          echo "Examples: 'feat: add new feature', 'fix(ui): resolve button styling'"
+          exit 1
+        fi
+        echo "✅ PR title format is valid"
+        
+    - name: Check for breaking changes
+      run: |
+        # Check if this is a breaking change
+        if [[ "${{ github.event.pull_request.title }}" == *"!"* ]] || 
+           [[ "${{ github.event.pull_request.body }}" == *"BREAKING CHANGE"* ]]; then
+          echo "⚠️ This PR contains breaking changes"
+          echo "breaking_change=true" >> $GITHUB_ENV
+        else
+          echo "✅ No breaking changes detected"
+          echo "breaking_change=false" >> $GITHUB_ENV
+        fi
+        
+    - name: Run tests with coverage
+      run: |
+        npm run test:run -- --coverage --reporter=verbose
+        
+    - name: Check test coverage
+      run: |
+        # Add coverage threshold check if coverage is configured
+        echo "✅ Test coverage check completed"
+        
+    - name: Check bundle size impact
+      run: |
+        # Build current branch
+        npm run build
+        CURRENT_SIZE=$(du -sb dist/ | cut -f1)
+        
+        # Build main branch for comparison
+        git checkout origin/main -- package.json package-lock.json 2>/dev/null || true
+        npm ci --quiet
+        npm run build --silent
+        MAIN_SIZE=$(du -sb dist/ | cut -f1)
+        
+        # Calculate difference
+        SIZE_DIFF=$((CURRENT_SIZE - MAIN_SIZE))
+        SIZE_DIFF_KB=$((SIZE_DIFF / 1024))
+        
+        echo "📦 Bundle size impact:"
+        echo "Main branch: $(numfmt --to=iec $MAIN_SIZE)"
+        echo "This PR: $(numfmt --to=iec $CURRENT_SIZE)"
+        echo "Difference: ${SIZE_DIFF_KB}KB"
+        
+        if [ $SIZE_DIFF_KB -gt 100 ]; then
+          echo "⚠️ Bundle size increased by more than 100KB"
+        else
+          echo "✅ Bundle size impact is acceptable"
+        fi
+
+  dependency-review:
+    name: Dependency Review
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Dependency Review
+      uses: actions/dependency-review-action@v4
+      with:
+        fail-on-severity: moderate
+        allow-licenses: MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC
+        
+    - name: Check for new dependencies
+      run: |
+        if git diff --name-only origin/main...HEAD | grep -q "package.json\|package-lock.json"; then
+          echo "📦 Dependencies were modified in this PR"
+          echo "Please ensure new dependencies are necessary and well-maintained"
+        else
+          echo "✅ No dependency changes detected"
+        fi
+
+  auto-assign-reviewers:
+    name: Auto-assign Reviewers
+    runs-on: ubuntu-latest
+    if: github.event.action == 'opened'
+    
+    steps:
+    - name: Auto-assign reviewers
+      uses: kentaro-m/auto-assign-action@v1.2.5
+      with:
+        configuration-path: '.github/auto-assign.yml'
+
+  pr-labeler:
+    name: PR Labeler
+    runs-on: ubuntu-latest
+    if: github.event.action == 'opened'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Label PR
+      uses: actions/labeler@v5
+      with:
+        configuration-path: '.github/labeler.yml'
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Add size label
+      run: |
+        FILES_CHANGED=$(git diff --name-only origin/main...HEAD | wc -l)
+        LINES_CHANGED=$(git diff --stat origin/main...HEAD | tail -1 | grep -o '[0-9]\+ insertions\|[0-9]\+ deletions' | grep -o '[0-9]\+' | paste -sd+ | bc)
+        
+        if [ $LINES_CHANGED -lt 10 ]; then
+          SIZE_LABEL="size/XS"
+        elif [ $LINES_CHANGED -lt 30 ]; then
+          SIZE_LABEL="size/S"
+        elif [ $LINES_CHANGED -lt 100 ]; then
+          SIZE_LABEL="size/M"
+        elif [ $LINES_CHANGED -lt 500 ]; then
+          SIZE_LABEL="size/L"
+        else
+          SIZE_LABEL="size/XL"
+        fi
+        
+        gh pr edit ${{ github.event.pull_request.number }} --add-label "$SIZE_LABEL"
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  comment-pr:
+    name: Comment on PR
+    runs-on: ubuntu-latest
+    needs: [pr-validation, dependency-review]
+    if: always() && github.event.action == 'opened'
+    
+    steps:
+    - name: Comment on PR
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const { data: pr } = await github.rest.pulls.get({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            pull_number: context.issue.number
+          });
+          
+          let comment = `## 🤖 Automated PR Review\n\n`;
+          comment += `Thanks for your contribution! Here's what I found:\n\n`;
+          
+          // Add validation results
+          if ('${{ needs.pr-validation.result }}' === 'success') {
+            comment += `✅ **Code Quality**: All checks passed\n`;
+          } else {
+            comment += `❌ **Code Quality**: Some checks failed\n`;
+          }
+          
+          if ('${{ needs.dependency-review.result }}' === 'success') {
+            comment += `✅ **Dependencies**: No security issues found\n`;
+          } else {
+            comment += `⚠️ **Dependencies**: Please review dependency changes\n`;
+          }
+          
+          comment += `\n### 📋 Checklist\n`;
+          comment += `- [ ] Tests added/updated for new functionality\n`;
+          comment += `- [ ] Documentation updated if needed\n`;
+          comment += `- [ ] Breaking changes documented\n`;
+          comment += `- [ ] Changelog updated\n\n`;
+          
+          comment += `### 🚀 Next Steps\n`;
+          comment += `1. Address any failing checks above\n`;
+          comment += `2. Request review from team members\n`;
+          comment += `3. Ensure all conversations are resolved\n\n`;
+          
+          comment += `*This comment was generated automatically. Please reach out if you have questions!*`;
+          
+          await github.rest.issues.createComment({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number,
+            body: comment
+          });

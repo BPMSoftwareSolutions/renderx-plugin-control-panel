@@ -4,9 +4,9 @@ import {
   controlPanelReducer,
   initialControlPanelState,
 } from "../state/control-panel.reducer";
-import type { ControlPanelAction as _ControlPanelAction } from "../types/control-panel.types";
-// Suppress unused variable warning - this is for future use
-void _ControlPanelAction;
+// Import for future use - currently unused but reserved for development
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import type { ControlPanelAction } from "../types/control-panel.types";
 
 export function useControlPanelState() {
   const [state, dispatch] = React.useReducer(

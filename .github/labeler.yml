@@ -1,0 +1,83 @@
+# Labeler configuration for automatic PR labeling
+# This file defines which labels to apply based on file changes
+
+# Frontend/UI changes
+'area/ui':
+  - 'src/components/**/*'
+  - 'src/ui/**/*'
+  - '**/*.css'
+  - '**/*.scss'
+  - '**/*.tsx'
+
+# Backend/Logic changes  
+'area/logic':
+  - 'src/services/**/*'
+  - 'src/utils/**/*'
+  - 'src/state/**/*'
+  - 'src/symphonies/**/*'
+
+# Testing changes
+'area/testing':
+  - '__tests__/**/*'
+  - '**/*.test.*'
+  - '**/*.spec.*'
+  - 'vitest.config.*'
+  - 'vitest.setup.*'
+
+# Documentation changes
+'area/docs':
+  - '*.md'
+  - 'docs/**/*'
+  - '.github/**/*.md'
+
+# Configuration changes
+'area/config':
+  - '*.json'
+  - '*.yml'
+  - '*.yaml'
+  - '.github/workflows/**/*'
+  - 'tsconfig.*'
+  - 'eslint.config.*'
+  - 'tsup.config.*'
+
+# Dependencies
+'area/deps':
+  - 'package.json'
+  - 'package-lock.json'
+  - 'yarn.lock'
+  - 'pnpm-lock.yaml'
+
+# Build system
+'area/build':
+  - 'tsup.config.*'
+  - '.github/workflows/**/*'
+  - 'Dockerfile'
+  - 'docker-compose.*'
+
+# Types
+'type/feature':
+  - any: ['feat:', 'feature:']
+
+'type/bugfix':
+  - any: ['fix:', 'bugfix:']
+
+'type/chore':
+  - any: ['chore:', 'maintenance:']
+
+'type/refactor':
+  - any: ['refactor:', 'refact:']
+
+# Priority labels (based on file patterns)
+'priority/high':
+  - 'src/index.*'
+  - 'package.json'
+  - '.github/workflows/**/*'
+
+'priority/medium':
+  - 'src/services/**/*'
+  - 'src/state/**/*'
+
+'priority/low':
+  - 'docs/**/*'
+  - '*.md'
+  - '__tests__/**/*'

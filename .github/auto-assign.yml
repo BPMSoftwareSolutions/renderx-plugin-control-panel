@@ -1,0 +1,33 @@
+# Auto-assign configuration for pull requests
+# This file configures automatic reviewer assignment
+
+# Reviewers to be assigned to pull requests
+reviewers:
+  # Add team members or maintainers here
+  # - username1
+  # - username2
+
+# Number of reviewers to assign
+numberOfReviewers: 1
+
+# Number of assignees to assign
+numberOfAssignees: 0
+
+# Skip keywords - PRs with these keywords in title/body won't get auto-assigned
+skipKeywords:
+  - wip
+  - draft
+  - "[WIP]"
+  - "[DRAFT]"
+
+# Skip draft PRs
+skipDraftPR: true
+
+# Add reviewers as assignees too
+addReviewers: false
+
+# Add assignees as reviewers too  
+addAssignees: false
+
+# Run only when PR is opened
+runOnDraft: false

@@ -1,15 +1,16 @@
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { CssRegistryStore } from '../css-registry.store';
 
 // Mock DOM environment
 const mockDocument = {
-  createElement: jest.fn(() => ({
+  createElement: vi.fn(() => ({
     id: '',
-    setAttribute: jest.fn(),
+    setAttribute: vi.fn(),
     textContent: '',
   })),
-  getElementById: jest.fn(() => null),
+  getElementById: vi.fn(() => null),
   head: {
-    appendChild: jest.fn(),
+    appendChild: vi.fn(),
   },
 };
 
@@ -23,7 +24,7 @@ describe('CssRegistryStore', () => {
   let store: CssRegistryStore;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     store = new CssRegistryStore();
   });
 

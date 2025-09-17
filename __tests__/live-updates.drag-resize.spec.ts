@@ -1,8 +1,8 @@
 /* @vitest-environment jsdom */
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { handlers as createHandlers } from "@renderx-plugins/canvas-component/symphonies/create/create.symphony.ts";
-import { handlers as dragHandlers } from "@renderx-plugins/canvas-component/symphonies/drag/drag.symphony.ts";
-import { handlers as resizeHandlers } from "@renderx-plugins/canvas-component/symphonies/resize/resize.move.symphony.ts";
+import { handlers as createHandlers } from "@renderx-plugins/canvas-component/symphonies/create/create.symphony";
+import { handlers as dragHandlers } from "@renderx-plugins/canvas-component/symphonies/drag/drag.symphony";
+import { handlers as resizeHandlers } from "@renderx-plugins/canvas-component/symphonies/resize/resize.move.symphony";
 import { handlers as controlPanelUpdateHandlers } from "../src/symphonies/update/update.symphony";
 
 function makeButtonTemplate() {

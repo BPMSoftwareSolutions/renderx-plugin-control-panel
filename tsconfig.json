@@ -18,7 +18,10 @@
     "types": ["node", "vitest/globals", "@testing-library/jest-dom"],
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["./src/*"],
+      "@renderx-plugins/canvas-component": ["__tests__/__mocks__/@renderx-plugins/canvas-component.ts"],
+      "@renderx-plugins/canvas-component/*": ["__tests__/__mocks__/@renderx-plugins/canvas-component/*"],
+      "@renderx-plugins/control-panel/*": ["src/*"]
     }
   },
   "include": [
