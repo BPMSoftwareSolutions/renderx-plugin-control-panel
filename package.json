@@ -65,6 +65,21 @@
   },
   "renderx": {
     "manifest": "dist/plugin-manifest.json",
+    "plugins": [
+      {
+        "id": "ControlPanelPlugin",
+        "ui": {
+          "slot": "controlPanel",
+          "module": "@renderx-plugins/control-panel",
+          "export": "ControlPanel"
+        },
+        "runtime": {
+          "module": "@renderx-plugins/control-panel",
+          "export": "register"
+        }
+      }
+    ],
     "sequences": ["json-sequences"]
   }
 }
+
