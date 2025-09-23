@@ -61,7 +61,7 @@ export function extractElementContent(element: HTMLElement, type?: string): Reco
       // For containers, just extract text content
       if (textContent) content.text = textContent;
       break;
-      
+
     case 'line':
       // For SVG-based line components, extract innerHTML
       const innerHTML = element.innerHTML;
@@ -69,13 +69,37 @@ export function extractElementContent(element: HTMLElement, type?: string): Reco
         content.innerHTML = innerHTML;
       }
       break;
-      
+
+    case 'heading':
+      // Extract heading content and level (from class variant or tagName fallback)
+      if (textContent) content.content = textContent;
+      {
+        const cls = Array.from(element.classList).find(c => c.startsWith('rx-heading--level-'));
+        if (cls) {
+          const lvl = cls.replace('rx-heading--level-', '');
+          content.level = lvl;
+        } else {
+          const tn = element.tagName.toLowerCase();
+          if (/^h[1-6]$/.test(tn)) content.level = tn;
+        }
+      }
+      break;
+
+    case 'paragraph':
+      // Extract paragraph alignment variant from class (e.g., rx-paragraph--right)
+      if (textContent) content.content = textContent;
+      {
+        const variant = extractClassVariant(element, 'rx-paragraph--', ['default', 'left', 'center', 'right', 'justify']);
+        if (variant) content.variant = variant;
+      }
+      break;
+
     default:
       // For unknown types, just extract text content
       if (textContent) content.text = textContent;
       break;
   }
-  
+
   return content;
 }
 

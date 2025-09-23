@@ -34,22 +34,41 @@ export const handlers = {
 
   resolveTemplate: vi.fn((data: any, ctx: any) => {
     // Mock template resolution
-    ctx.template = data.component?.template || '<div>Mock Template</div>';
+    const template = data.component?.template || {};
+    ctx.payload = { ...(ctx.payload || {}), template };
     return ctx;
   }),
 
   createNode: vi.fn((data: any, ctx: any) => {
-    // Mock node creation
-    const element = document.createElement('div');
-    element.id = 'mock-node';
+    // Mock node creation using resolved template
+    const position = data.position || { x: 0, y: 0 };
+    const template = ctx.payload?.template || {};
+    const element = document.createElement(template.tag || 'div');
+    element.id = `mock-node-${Date.now()}`;
+    element.textContent = template.text || '';
+    element.style.position = 'absolute';
+    element.style.left = `${position.x}px`;
+    element.style.top = `${position.y}px`;
 
-    if (data.position) {
-      element.style.left = `${data.position.x}px`;
-      element.style.top = `${data.position.y}px`;
-      element.style.position = 'absolute';
+    if (template.classes) {
+      element.className = template.classes.join(' ');
     }
 
-    ctx.node = element;
+    if (template.dimensions) {
+      if (typeof template.dimensions.width === 'number') {
+        element.style.width = `${template.dimensions.width}px`;
+      }
+      if (typeof template.dimensions.height === 'number') {
+        element.style.height = `${template.dimensions.height}px`;
+      }
+    }
+
+    const canvas = document.getElementById('rx-canvas');
+    if (canvas) {
+      canvas.appendChild(element);
+    }
+
+    ctx.payload = { ...(ctx.payload || {}), element, id: element.id, nodeId: element.id, position };
     return ctx;
   })
 };

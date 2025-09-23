@@ -12,8 +12,7 @@ function loadJson<T = any>(p: string): T {
 describe("SVG schema → code editor mapping", () => {
   it("maps ui.control = code to field.type = 'code' and applies preserveAspectRatio enum presets", async () => {
     const configPath = path.join(__dirname, "..", "src", "config", "control-panel.schema.json");
-    const repoRoot = path.resolve(__dirname, "..", "..", "..");
-    const svgSchemaPath = path.join(repoRoot, "json-components", "svg.json");
+    const svgSchemaPath = path.join(__dirname, "__fixtures__", "json-components", "svg.json");
 
     const config = loadJson<ControlPanelConfig>(configPath);
     const svgSchema = loadJson<ComponentSchema>(svgSchemaPath);

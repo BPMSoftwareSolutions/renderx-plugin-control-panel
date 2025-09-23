@@ -1,6 +1,6 @@
 {
   "name": "@renderx-plugins/control-panel",
-  "version": "0.1.0-rc.4",
+  "version": "0.1.0-rc.7",
   "private": false,
   "type": "module",
   "sideEffects": [
@@ -8,7 +8,8 @@
   ],
   "files": [
     "dist",
-    "src"
+    "src",
+    "json-sequences"
   ],
   "types": "./dist/index.d.ts",
   "module": "./dist/index.js",
@@ -29,7 +30,7 @@
     "build": "tsup --config tsup.config.ts",
     "dev": "tsup --config tsup.config.ts --watch",
     "typecheck": "tsc --noEmit",
-    "test": "vitest",
+    "test": "vitest run",
     "test:run": "vitest run",
     "test:ui": "vitest --ui",
     "lint": "eslint src --ext .ts,.tsx",
@@ -61,5 +62,24 @@
   "publishConfig": {
     "access": "public",
     "tag": "rc"
+  },
+  "renderx": {
+    "manifest": "dist/plugin-manifest.json",
+    "plugins": [
+      {
+        "id": "ControlPanelPlugin",
+        "ui": {
+          "slot": "controlPanel",
+          "module": "@renderx-plugins/control-panel",
+          "export": "ControlPanel"
+        },
+        "runtime": {
+          "module": "@renderx-plugins/control-panel",
+          "export": "register"
+        }
+      }
+    ],
+    "sequences": ["json-sequences"]
   }
 }
+

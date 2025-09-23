@@ -25,6 +25,16 @@ export const handlers = {
       element.className = template.classes.join(' ');
     }
 
+    // Apply initial dimensions from template if provided
+    if (template.dimensions) {
+      if (typeof template.dimensions.width === 'number') {
+        element.style.width = `${template.dimensions.width}px`;
+      }
+      if (typeof template.dimensions.height === 'number') {
+        element.style.height = `${template.dimensions.height}px`;
+      }
+    }
+
     const canvas = document.getElementById('rx-canvas');
     if (canvas) {
       canvas.appendChild(element);
@@ -106,16 +116,56 @@ export const handlers = {
 
   updateAttribute: vi.fn((data: any, ctx: any) => {
     // Mock attribute update handler
-    const element = document.getElementById(data.id);
+    const element = document.getElementById(data.id) as HTMLElement | null;
     if (element) {
-      if (data.attribute === 'content') {
-        element.textContent = data.value;
-      } else if (data.attribute === 'bg-color' || data.attribute === 'backgroundColor') {
-        element.style.backgroundColor = data.value;
-      } else if (data.attribute === 'width') {
-        element.style.width = `${data.value}px`;
-      } else if (data.attribute === 'height') {
-        element.style.height = `${data.value}px`;
+      switch (data.attribute) {
+        case 'content':
+          element.textContent = data.value;
+          break;
+        case 'bg-color':
+        case 'backgroundColor':
+          element.style.backgroundColor = data.value;
+          break;
+        case 'text-color':
+        case 'color':
+          element.style.color = data.value;
+          break;
+        case 'width':
+          element.style.width = `${data.value}px`;
+          break;
+        case 'height':
+          element.style.height = `${data.value}px`;
+          break;
+        case 'x':
+          element.style.left = `${data.value}px`;
+          element.style.position = element.style.position || 'absolute';
+          break;
+        case 'y':
+          element.style.top = `${data.value}px`;
+          element.style.position = element.style.position || 'absolute';
+          break;
+        case 'variant':
+          // Support specific component bases: button, image, input, paragraph, heading
+          {
+            const classes = Array.from(element.classList);
+            const base = ['rx-button', 'rx-image', 'rx-input', 'rx-paragraph', 'rx-heading']
+              .find(b => classes.includes(b));
+            if (base) {
+              const prefix = `${base}--`;
+              classes
+                .filter(c => c.startsWith(prefix))
+                .forEach(c => element.classList.remove(c));
+              element.classList.add(`${prefix}${data.value}`);
+            }
+          }
+          break;
+        case 'disabled':
+          if (data.value) element.setAttribute('disabled', '');
+          else element.removeAttribute('disabled');
+          break;
+        default:
+          // ignore unknowns
+          break;
       }
     }
     ctx.payload = { element, updated: true, attribute: data.attribute, value: data.value };
