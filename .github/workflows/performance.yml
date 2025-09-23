@@ -3,8 +3,6 @@ name: Performance Monitoring
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
   schedule:
     # Run performance tests weekly on Sundays at 2 AM UTC
     - cron: '0 2 * * 0'
