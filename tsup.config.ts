@@ -1,4 +1,5 @@
 import { defineConfig } from 'tsup';
+import { writeFileSync } from 'fs';
 
 // Disable DTS generation when running via `npm test` to speed up tests and avoid
 // intermittent type bundling races during pretest builds.
@@ -29,5 +30,26 @@ export default defineConfig({
     '@renderx-plugins/host-sdk',
     '@renderx-plugins/manifest-tools',
   ],
+  onSuccess: async () => {
+    // Copy plugin manifest after build
+    const manifest = {
+      plugins: [
+        {
+          id: "ControlPanelPlugin",
+          ui: {
+            slot: "controlPanel",
+            module: "@renderx-plugins/control-panel",
+            export: "ControlPanel"
+          },
+          runtime: {
+            module: "@renderx-plugins/control-panel",
+            export: "register"
+          }
+        }
+      ]
+    };
+    writeFileSync('dist/plugin-manifest.json', JSON.stringify(manifest, null, 2));
+    console.log('✅ Plugin manifest created at dist/plugin-manifest.json');
+  },
 });
 

@@ -1,6 +1,6 @@
 {
   "name": "@renderx-plugins/control-panel",
-  "version": "0.1.0-rc.6",
+  "version": "0.1.0-rc.7",
   "private": false,
   "type": "module",
   "sideEffects": [
@@ -30,7 +30,7 @@
     "build": "tsup --config tsup.config.ts",
     "dev": "tsup --config tsup.config.ts --watch",
     "typecheck": "tsc --noEmit",
-    "test": "vitest",
+    "test": "vitest run",
     "test:run": "vitest run",
     "test:ui": "vitest --ui",
     "lint": "eslint src --ext .ts,.tsx",
@@ -64,6 +64,7 @@
     "tag": "rc"
   },
   "renderx": {
+    "manifest": "dist/plugin-manifest.json",
     "sequences": ["json-sequences"]
   }
 }

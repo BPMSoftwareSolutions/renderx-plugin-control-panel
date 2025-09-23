@@ -9,9 +9,12 @@ export default defineConfig({
     exclude: ['node_modules', 'dist'],
   },
   resolve: {
-    alias: {
-      '@': '/src',
-      '@renderx-plugins/canvas-component': '/__tests__/__mocks__/@renderx-plugins/canvas-component.ts',
-    },
+    alias: [
+      { find: '@', replacement: '/src' },
+      { find: /^@renderx-plugins\/canvas-component$/, replacement: '/__tests__/__mocks__/@renderx-plugins/canvas-component.ts' },
+      { find: /^@renderx-plugins\/canvas-component\//, replacement: '/__tests__/__mocks__/@renderx-plugins/canvas-component/' },
+      // Map tests' relative json-components imports to local fixtures
+      { find: /^\.\.\/\.\.\/\.\.\/json-components\//, replacement: '/__tests__/__fixtures__/json-components/' },
+    ],
   },
 });

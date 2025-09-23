@@ -185,6 +185,20 @@ export class SchemaResolverService {
     );
     fields.push(...additionalFields);
 
+    // Ensure HTML markup uses a code editor even when derived from fallback fields
+    if (componentType === "html") {
+      const markupField = fields.find(
+        (f) => f.key === "markup" && typeof f.path === "string" && f.path.startsWith("content.")
+      );
+      if (markupField) {
+        markupField.type = "code" as any;
+        (markupField as any).rendererProps = {
+          ...(markupField as any).rendererProps,
+          rows: 8,
+        };
+      }
+    }
+
     return this.sortFieldsBySection(fields);
   }
 
