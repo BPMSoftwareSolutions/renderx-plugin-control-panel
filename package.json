@@ -1,6 +1,6 @@
 {
   "name": "@renderx-plugins/control-panel",
-  "version": "0.1.0-rc.7",
+  "version": "0.1.0-rc.8",
   "private": false,
   "type": "module",
   "sideEffects": [
@@ -37,7 +37,7 @@
     "lint:fix": "eslint src --ext .ts,.tsx --fix"
   },
   "peerDependencies": {
-    "@renderx-plugins/host-sdk": "^0.3.0",
+    "@renderx-plugins/host-sdk": "^1.0.4-rc.0",
     "react": "^18.0.0 || ^19.0.0",
     "react-dom": "^18.0.0 || ^19.0.0"
   },
@@ -79,7 +79,8 @@
         }
       }
     ],
-    "sequences": ["json-sequences"]
+    "sequences": [
+      "json-sequences"
+    ]
   }
 }
-
